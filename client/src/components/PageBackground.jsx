@@ -2,7 +2,9 @@ export default function PageBackground({ children }) {
   return (
     <div
       className="min-h-screen relative bg-cover bg-center bg-no-repeat text-white"
-      style={{ backgroundImage: "url('/images/apply-bg.jpg')" }}
+      // style={{ backgroundImage: "url('/images/apply-bg.jpg')" }}
+      style={{ backgroundImage: "url('/images/form.jpg')" }}
+
     >
       {/* overlay */}
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
