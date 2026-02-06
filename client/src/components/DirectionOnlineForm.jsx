@@ -389,6 +389,16 @@ export default function DirectionOnlineForm({
               disabled={busy}
               className=""
             />
+            {/* remove SHASH*/}
+            <Input
+              type="date"
+              name="paymentInstructionDate"
+              value={normalizeDmyDate(date)}
+              onChange={(e) => update("paymentInstruction.date", e.target.value)}
+              disabled={busy}
+              placeholder="dd/MM/yyyy"
+            />
+            {/* remove SHASH*/}
           </div>
         </div>
       </div>
