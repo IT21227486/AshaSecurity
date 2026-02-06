@@ -392,11 +392,11 @@ export default function DirectionOnlineForm({
             {/* remove SHASH*/}
             <Input
               type="date"
-              name="paymentInstructionDate"
-              value={normalizeDmyDate(date)}
-              onChange={(e) => update("paymentInstruction.date", e.target.value)}
+              // name="paymentInstructionDate"
+              value={office.date}
+              onChange={(e) => update("directionOnline.officeUseOnly.date", e.target.value)}
               disabled={busy}
-              placeholder="dd/MM/yyyy"
+              placeholder="mm/dd/yyyy"
             />
             {/* remove SHASH*/}
           </div>
