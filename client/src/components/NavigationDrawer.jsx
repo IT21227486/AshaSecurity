@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../theme/ThemeContext.jsx";
 
+
+import { useAuth } from "../auth/AuthContext.jsx";
 function cx(...parts) {
   return parts.filter(Boolean).join(" ");
 }
@@ -37,6 +39,16 @@ function IconChevron({ open, className = "" }) {
       strokeLinejoin="round"
     >
       <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function IconLogout({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={cx("h-5 w-5", className)} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 16l-4-4 4-4" />
+      <path d="M6 12h10" />
+      <path d="M16 19a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2" />
     </svg>
   );
 }
@@ -187,8 +199,10 @@ function Group({ icon, label, open, onToggle, children }) {
 
 export default function NavigationDrawer() {
   const { theme } = useTheme();
+  const auth = useAuth();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
+  const navg = useNavigate();
   const panelRef = useRef(null);
 
   // Compact title shown next to the menu icon (saves vertical space in forms)
@@ -215,27 +229,10 @@ export default function NavigationDrawer() {
 
   const routes = useMemo(
     () => ({
-      portal: "/",
-      localRoot: "/apply/local",
-      localInd: "/apply/local/individual",
-      localCorp: "/apply/local/corporate",
-      foreignRoot: "/apply/foreign",
-      foreignInd: "/apply/foreign/individual",
-      foreignCorp: "/apply/foreign/corporate",
-      update: "/update",
+      portal: "/portal",
     }),
     []
   );
-
-  // Open the proper group based on current path
-  const [localOpen, setLocalOpen] = useState(false);
-  const [foreignOpen, setForeignOpen] = useState(false);
-
-  useEffect(() => {
-    const p = loc.pathname || "/";
-    setLocalOpen(p.startsWith("/apply/local"));
-    setForeignOpen(p.startsWith("/apply/foreign"));
-  }, [loc.pathname]);
 
   // click outside to close
   useEffect(() => {
@@ -257,8 +254,16 @@ export default function NavigationDrawer() {
   }, [open]);
 
   const isActive = (path) => loc.pathname === path;
-  const starts = (prefix) => loc.pathname.startsWith(prefix);
   const close = () => setOpen(false);
+
+  function doLogout() {
+    // Clear auth token and go back to landing page
+    try { auth?.signout?.(); } catch {}
+    close();
+    // replace avoids back button returning to protected pages
+    navg("/", { replace: true });
+  }
+
 
   return (
     <>
@@ -366,81 +371,29 @@ export default function NavigationDrawer() {
               onClick={close}
             />
 
-            <NavItem
-              to={routes.update}
-              icon={<IconId className="text-zinc-900 dark:text-zinc-100" />}
-              label="Update Application"
-              active={isActive(routes.update)}
-              onClick={close}
-            />
+            {/*
+              Navigation simplified (as requested):
+              - Keep only "Application Portal" + "Sign out"
+              - Removed: Update Application / Local Application / Foreign Application
+            */}
+                        <div className="mt-3 border-t border-black/10 pt-3 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={doLogout}
+                  className={cx(
+                    "w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
+                    "text-zinc-900 hover:bg-black/5 dark:text-zinc-100 dark:hover:bg-white/10"
+                  )}
+                >
+                  <IconLogout className="text-zinc-900 dark:text-zinc-100" />
+                  <span>Sign out</span>
+                </button>
+              </div>
 
-            <Group
-              icon={<IconId className="text-zinc-900 dark:text-zinc-100" />}
-              label="Local Application"
-              open={localOpen}
-              onToggle={() => setLocalOpen((v) => !v)}
-            >
-              <NavItem
-                to={routes.localRoot}
-                icon={<IconId className="text-zinc-900 dark:text-zinc-100" />}
-                label="Local Home"
-                active={isActive(routes.localRoot)}
-                onClick={close}
-                depth={1}
-              />
-              <NavItem
-                to={routes.localInd}
-                icon={<IconId className="text-zinc-900 dark:text-zinc-100" />}
-                label="Local Individual"
-                active={isActive(routes.localInd)}
-                onClick={close}
-                depth={1}
-              />
-              <NavItem
-                to={routes.localCorp}
-                icon={<IconBuilding className="text-zinc-900 dark:text-zinc-100" />}
-                label="Local Corporate"
-                active={isActive(routes.localCorp)}
-                onClick={close}
-                depth={1}
-              />
-            </Group>
-
-            <Group
-              icon={<IconGlobe className="text-zinc-900 dark:text-zinc-100" />}
-              label="Foreign Application"
-              open={foreignOpen}
-              onToggle={() => setForeignOpen((v) => !v)}
-            >
-              <NavItem
-                to={routes.foreignRoot}
-                icon={<IconGlobe className="text-zinc-900 dark:text-zinc-100" />}
-                label="Foreign Home"
-                active={isActive(routes.foreignRoot)}
-                onClick={close}
-                depth={1}
-              />
-              <NavItem
-                to={routes.foreignInd}
-                icon={<IconId className="text-zinc-900 dark:text-zinc-100" />}
-                label="Foreign Individual"
-                active={isActive(routes.foreignInd)}
-                onClick={close}
-                depth={1}
-              />
-              <NavItem
-                to={routes.foreignCorp}
-                icon={<IconBuilding className="text-zinc-900 dark:text-zinc-100" />}
-                label="Foreign Corporate"
-                active={isActive(routes.foreignCorp)}
-                onClick={close}
-                depth={1}
-              />
-            </Group>
-          </nav>
+</nav>
 
           {/* Footer */}
-          <div className="absolute bottom-5 left-5 right-5">
+          {/* <div className="absolute bottom-5 left-5 right-5">
             <div className="rounded-2xl border border-black/10 bg-black/5 p-4 dark:border-white/10 dark:bg-white/5">
               <div className="text-xs text-zinc-200 font-semibold">
                 
@@ -449,7 +402,7 @@ export default function NavigationDrawer() {
                 Press <span className="text-zinc-100 font-semibold">Esc</span> to close the menu.
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </aside>
     </>

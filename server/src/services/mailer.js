@@ -4,7 +4,7 @@ import { env } from "../utils/env.js";
 export function getTransporter() {
   if (!env.EMAIL_ENABLED) return null;
 
-  if (!env.MAIL_HOST || !env.MAIL_USER || !env.MAIL_PASS || !env.TO_EMAILS.length) {
+  if (!env.MAIL_HOST || !env.MAIL_USER || !env.MAIL_PASS) {
     throw new Error("Email enabled but SMTP env vars are incomplete.");
   }
 
@@ -15,6 +15,35 @@ export function getTransporter() {
     auth: { user: env.MAIL_USER, pass: env.MAIL_PASS },
   });
 }
+/**
+ * Generic mail sender used by auth flows (forgot password etc.)
+ * If EMAIL_ENABLED is false, this will no-op (logs in dev).
+ */
+export async function sendMail({ to, subject, html, text, attachments } = {}) {
+  const transporter = getTransporter();
+  if (!transporter) {
+    if (env.NODE_ENV !== "production") {
+      console.log("[mailer] EMAIL_ENABLED=false. Skipping email:", { to, subject });
+    }
+    return { skipped: true };
+  }
+
+  if (!to) throw new Error("sendMail: 'to' is required");
+  if (!subject) throw new Error("sendMail: 'subject' is required");
+
+  const from = env.MAIL_USER;
+
+  return transporter.sendMail({
+    from,
+    to,
+    subject,
+    text,
+    html,
+    attachments,
+  });
+}
+
+
 
 export function buildEmailHTML(app) {
   const line = (k, v) => `<tr><td style="padding:6px 10px;color:#777">${k}</td><td style="padding:6px 10px;color:#111"><b>${v ?? "-"}</b></td></tr>`;

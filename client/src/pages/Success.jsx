@@ -75,7 +75,7 @@ export default function Success() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               className="rounded-2xl bg-white text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-zinc-200 transition"
-              to="/"
+              to="/portal"
             >
               Back to Home
             </Link>

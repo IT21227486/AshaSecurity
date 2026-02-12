@@ -4,38 +4,124 @@ function cx(...parts) {
   return parts.filter(Boolean).join(" ");
 }
 
-export default function ThemeToggle({ className = "", label = "Dark Mode" }) {
+function SunIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cx("h-5 w-5", className)}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M4.93 4.93l1.41 1.41" />
+      <path d="M17.66 17.66l1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="M4.93 19.07l1.41-1.41" />
+      <path d="M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cx("h-5 w-5", className)}
+      aria-hidden="true"
+    >
+      <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8Z" />
+    </svg>
+  );
+}
+
+/**
+ * Eye-catchy theme switch (no text label)
+ * - Dark mode: right side active (blue circle + moon), dark pill background
+ * - Light mode: left side active (blue circle + sun), light pill background
+ */
+export default function ThemeToggle({ className = "", label = "" }) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
+  const setLight = () => setTheme("light");
+  const setDark = () => setTheme("dark");
+
   return (
-    <div className={cx("inline-flex items-center gap-3", className)}>
+    <div className={cx("inline-flex items-center", className)}>
+      {/* label intentionally hidden (user request) */}
       {label ? (
-        <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <span className="mr-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
           {label}
         </span>
       ) : null}
 
-      <button
-        type="button"
+      <div
+        className={cx(
+          "relative h-10 w-20 rounded-full p-1",
+          "transition-all duration-300",
+          "shadow-[0_10px_25px_-18px_rgba(0,0,0,0.45)]",
+          "ring-1 ring-black/10 hover:ring-black/20",
+          "dark:ring-white/15 dark:hover:ring-white/25",
+          isDark ? "bg-zinc-900" : "bg-white"
+        )}
         role="switch"
         aria-checked={isDark}
-        aria-label="Toggle dark mode"
-        onClick={() => setTheme(isDark ? "light" : "dark")}
-        className={cx(
-          "relative inline-flex h-7 w-14 items-center rounded-full transition",
-          "ring-1 ring-black/10 bg-zinc-200 hover:bg-zinc-300",
-          "dark:ring-white/15 dark:bg-zinc-800 dark:hover:bg-zinc-700",
-          isDark ? "bg-teal-500 hover:bg-teal-500" : ""
-        )}
+        aria-label="Toggle theme"
       >
-        <span
-          className={cx(
-            "inline-block h-6 w-6 transform rounded-full bg-white shadow transition",
-            isDark ? "translate-x-7" : "translate-x-1"
-          )}
-        />
-      </button>
+        <div className="grid h-full w-full grid-cols-2 gap-1">
+          {/* LIGHT */}
+          <button
+            type="button"
+            onClick={setLight}
+            className={cx(
+              "group grid place-items-center rounded-full transition-all duration-300",
+              !isDark
+                ? "bg-blue-600 shadow-[0_10px_20px_-12px_rgba(37,99,235,0.85)]"
+                : "bg-transparent hover:bg-black/5 dark:hover:bg-white/10"
+            )}
+            aria-label="Switch to light mode"
+          >
+            <SunIcon
+              className={cx(
+                "transition-colors duration-300",
+                !isDark ? "text-white" : "text-zinc-500 dark:text-zinc-400"
+              )}
+            />
+          </button>
+
+          {/* DARK */}
+          <button
+            type="button"
+            onClick={setDark}
+            className={cx(
+              "group grid place-items-center rounded-full transition-all duration-300",
+              isDark
+                ? "bg-blue-600 shadow-[0_10px_20px_-12px_rgba(37,99,235,0.85)]"
+                : "bg-transparent hover:bg-black/5 dark:hover:bg-white/10"
+            )}
+            aria-label="Switch to dark mode"
+          >
+            <MoonIcon
+              className={cx(
+                "transition-colors duration-300",
+                isDark ? "text-white" : "text-zinc-500 dark:text-zinc-400"
+              )}
+            />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

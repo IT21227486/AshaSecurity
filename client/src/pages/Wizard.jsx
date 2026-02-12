@@ -1094,6 +1094,17 @@ const requireUpload = (fileVal, existingKey, msg) => {
   return true;
 };
 
+const fail = (path, msg, { toast = true } = {}) => {
+  setError(msg);
+  if (path) setFieldErrors({ [path]: msg });
+  else setFieldErrors({});
+  if (toast) showToast(msg);
+  scrollFormTop(true);
+  return false;
+};
+
+
+
 
     // When navigating by clicking a step in the left panel we need to validate
     // the *source* step, not necessarily the currently rendered one.
@@ -1178,11 +1189,11 @@ const requireUpload = (fileVal, existingKey, msg) => {
     if (isLocalCorporate(region, type)) {
       if (key === "clientRegistration") {
         const c = form?.clientRegistration || {};
-        if (!c.companyName) return (setError("Company Name is required."), false);
+        if (!c.companyName) return fail("clientRegistration.companyName", "Company Name is required.");
         // Accept any of these keys for registration number
         const reg = (c.regNo || c.businessRegNo || c.declaration?.businessRegNo || "").trim();
-        if (!reg) return (setError("Business Registration No. is Required."), false);
-        if (!c.email) return (setError("Company Email is required."), false);
+        if (!reg) return fail("clientRegistration.businessRegNo", "Business Registration No. is Required.");
+        if (!c.email) return fail("clientRegistration.email", "Company Email is required.");
         // Required uploads
         if (!requireUpload(lcDirector1Sig, "lcDirector1Sig", "Please upload Specimen Signature of Director 1.")) return false;
         if (!requireUpload(lcDirector2Sig, "lcDirector2Sig", "Please upload Specimen Signature of Director 2.")) return false;
@@ -1197,10 +1208,10 @@ const requireUpload = (fileVal, existingKey, msg) => {
         const month = String(d.month || "").trim();
 
         if (!/^[0-9]+$/.test(day) || Number(day) < 1 || Number(day) > 31) {
-          return (setError("Credit Facility Agreement: Date must be a number between 1 and 31."), false);
+          return fail("creditFacility.date.day", "Credit Facility Agreement: Date must be a number between 1 and 31.");
         }
         if (!/^[0-9]+$/.test(month) || Number(month) < 1 || Number(month) > 12) {
-          return (setError("Credit Facility Agreement: Month must be a number between 1 and 12."), false);
+          return fail("creditFacility.date.month", "Credit Facility Agreement: Month must be a number between 1 and 12.");
         }
       }
 
@@ -1208,7 +1219,7 @@ const requireUpload = (fileVal, existingKey, msg) => {
       if (key === "beneficialOwnership") {
         const owners = form?.beneficialOwnership?.beneficialOwners;
         if (!Array.isArray(owners) || owners.length === 0) {
-          return (setError("Please add at least one Beneficial Owner."), false);
+          return fail("beneficialOwnership.beneficialOwners", "Please add at least one Beneficial Owner.");
         }
 
         // Match BOF UI schema (name, nicOrPassport, dob, currentAddress, sourceOfBeneficialOwnership, pep)
@@ -1222,17 +1233,17 @@ const requireUpload = (fileVal, existingKey, msg) => {
 
         const anyStarted = owners.some((o) => !isBlankOwner(o));
         if (!anyStarted) {
-          return (setError("Please enter at least one Beneficial Owner."), false);
+          return fail("beneficialOwnership.beneficialOwners", "Please enter at least one Beneficial Owner.");
         }
 
         // Validate first started owner
         const firstIdx = owners.findIndex((o) => !isBlankOwner(o));
         const first = owners[firstIdx] || {};
         if (!String(first.name || "").trim()) {
-          return (setError(`Beneficial Owner (${firstIdx + 1}): Name is required.`), false);
+          return fail(`beneficialOwnership.beneficialOwners.${firstIdx}.name`, `Beneficial Owner (${firstIdx + 1}): Name is required.`);
         }
         if (!String(first.nicOrPassport || "").trim()) {
-          return (setError(`Beneficial Owner (${firstIdx + 1}): NIC/Passport is required.`), false);
+          return fail(`beneficialOwnership.beneficialOwners.${firstIdx}.nicOrPassport`, `Beneficial Owner (${firstIdx + 1}): NIC/Passport is required.`);
         }
       }
 
@@ -1253,16 +1264,16 @@ const requireUpload = (fileVal, existingKey, msg) => {
   const c = form?.fcClientRegistration || {};
 
   if (!String(c.companyName || "").trim()) {
-    return (setError("Name of Company is required."), false);
+    return fail("fcClientRegistration.companyName", "Name of Company is required.");
   }
   if (!String(c.businessRegNo || "").trim()) {
-    return (setError("Business Reg No. is required."), false);
+    return fail("fcClientRegistration.businessRegNo", "Business Reg No. is required.");
   }
   if (!String(c.emailAddress || "").trim()) {
-    return (setError("Email Address is required."), false);
+    return fail("fcClientRegistration.emailAddress", "Email Address is required.");
   }
   if (!String(c.registeredAddress || "").trim()) {
-    return (setError("Registered Address is required."), false);
+    return fail("fcClientRegistration.registeredAddress", "Registered Address is required.");
   }
 
   // Required uploads for Client Registration (Foreign -> Corporate)
@@ -1276,44 +1287,44 @@ const requireUpload = (fileVal, existingKey, msg) => {
   const k = form?.fcKyc || {};
 
   if (!String(k.natureOfBusiness || "").trim()) {
-    return (setError("KYC: Nature of the Business is required."), false);
+    return fail("fcKyc.natureOfBusiness", "KYC: Nature of the Business is required.");
   }
 
   if (!String(k.expectedInvestmentPerAnnum || "").trim()) {
-    return (setError("KYC: Please select Expected value of Investment per annum."), false);
+    return fail("fcKyc.expectedInvestmentPerAnnum", "KYC: Please select Expected value of Investment per annum.");
   }
 
   if (!Array.isArray(k.sourceOfFunds) || k.sourceOfFunds.length === 0) {
-    return (setError("KYC: Please select at least one Source of funds."), false);
+    return fail("fcKyc.sourceOfFunds", "KYC: Please select at least one Source of funds.");
   }
 
   if ((k.sourceOfFunds || []).includes("Others (Specify)") && !String(k.sourceOfFundsOther || "").trim()) {
-    return (setError("KYC: Please specify 'Others' Source of funds."), false);
+    return fail("fcKyc.sourceOfFundsOther", "KYC: Please specify 'Others' Source of funds.");
   }
 
   if (!String(k.fatcaUsPerson || "").trim()) {
-    return (setError("KYC: Please select FATCA (Yes/No)."), false);
+    return fail("fcKyc.fatcaUsPerson", "KYC: Please select FATCA (Yes/No).");
   }
 
   if (k.fatcaUsPerson === "Yes" && !String(k.fatcaClarify || "").trim()) {
-    return (setError("KYC: Please clarify FATCA details."), false);
+    return fail("fcKyc.fatcaClarify", "KYC: Please clarify FATCA details.");
   }
 
   if (!String(k.pep || "").trim()) {
-    return (setError("KYC: Please select PEP (Yes/No)."), false);
+    return fail("fcKyc.pep", "KYC: Please select PEP (Yes/No).");
   }
 
   if (k.pep === "Yes" && !String(k.pepClarify || "").trim()) {
-    return (setError("KYC: Please clarify PEP details."), false);
+    return fail("fcKyc.pepClarify", "KYC: Please clarify PEP details.");
   }
 
   // keep authorized person lightweight (don’t block too hard)
   const a = k.authorizedPerson || {};
   if (!String(a.names || "").trim()) {
-    return (setError("KYC: Authorized person name/s is required."), false);
+    return fail("fcKyc.authorizedPerson.names", "KYC: Authorized person name/s is required.");
   }
   if (!String(a.email || "").trim()) {
-    return (setError("KYC: Authorized person email is required."), false);
+    return fail("fcKyc.authorizedPerson.email", "KYC: Authorized person email is required.");
   }
 }
 
@@ -1323,7 +1334,7 @@ const requireUpload = (fileVal, existingKey, msg) => {
         const owners = bof.owners;
 
         if (!Array.isArray(owners) || owners.length === 0) {
-          return (setError("Please add at least one Beneficial Owner."), false);
+          return fail("beneficialOwnership.beneficialOwners", "Please add at least one Beneficial Owner.");
         }
 
         // Match current BOF schema: owners[{name,nicOrPassport,...}]
@@ -1331,13 +1342,13 @@ const requireUpload = (fileVal, existingKey, msg) => {
           (o) => String(o?.name || "").trim() || String(o?.nicOrPassport || "").trim()
         );
 
-        if (!started) return (setError("Please enter Beneficial Owner details."), false);
+        if (!started) return fail("fcBeneficialOwnership.owners", "Please enter Beneficial Owner details.");
         if (!String(started.name || "").trim())
-          return (setError("Beneficial Owner Name is required."), false);
+          return fail("fcBeneficialOwnership.owners.0.name", "Beneficial Owner Name is required.");
         if (!String(started.nicOrPassport || "").trim())
-          return (setError("Beneficial Owner NIC or Passport is required."), false);
+          return fail("fcBeneficialOwnership.owners.0.nicOrPassport", "Beneficial Owner NIC or Passport is required.");
         if (!String(started.pep || "").trim())
-          return (setError("Please select Yes/No for PEP."), false);
+          return fail("fcBeneficialOwnership.owners.0.pep", "Please select Yes/No for PEP.");
       }
 
       if (key === "fcAdditionalRequirements") {
@@ -1352,12 +1363,12 @@ const requireUpload = (fileVal, existingKey, msg) => {
     if (key === "clientRegistration") {
       const p = form?.clientRegistration?.principal;
 
-      if (!p?.email) return (setError("Principal Applicant Email is required."), false);
-      if (!p?.nic) return (setError("Principal Applicant NIC is required."), false);
+      if (!p?.email) return fail("clientRegistration.principal.email", "Principal Applicant Email is required.");
+      if (!p?.nic) return fail("clientRegistration.principal.nic", "Principal Applicant NIC is required.");
 
       const jointEnabled = !!form?.clientRegistration?.jointApplicant?.enabled;
       if (jointEnabled && !form?.clientRegistration?.jointApplicant?.nic) {
-        return (setError("Joint Applicant NIC is required."), false);
+        return fail("clientRegistration.jointApplicant.nic", "Joint Applicant NIC is required.");
       }
 
       if (!requireUpload(bankProof, "bankProof", "Please upload Bank Proof.")) return false;
@@ -1400,15 +1411,15 @@ if (key === "declaration") {
   const s2 = form?.declaration?.schedule2;
 
   if (!s1?.authorisedPersonFullName)
-    return (setError("Schedule 1: Authorized person full name is required."), false);
+    return fail("paymentInstruction.schedule1.authorizedPersonFullName", "Schedule 1: Authorized person full name is required.");
   if (!s1?.clientNames)
-    return (setError("Schedule 1: Client name/s is required."), false);
+    return fail("paymentInstruction.schedule1.clientNames", "Schedule 1: Client name/s is required.");
 
   // Signature on behalf of stockbroker firm (advisorSig upload)
   if (!requireUpload(advisorSig, "advisorSig", "Schedule 1: Signature upload is required.")) return false;
 
-  if (!s1?.name) return (setError("Schedule 1: Name is required."), false);
-  if (!s1?.designation) return (setError("Schedule 1: Designation is required."), false);
+  if (!s1?.name) return fail("paymentInstruction.schedule1.person.name", "Schedule 1: Name is required.");
+  if (!s1?.designation) return fail("paymentInstruction.schedule1.person.designation", "Schedule 1: Designation is required.");
 
   // Local -> Individual: NIC format validation (block Next if invalid)
   if (isLocalIndividual(region, type)) {
@@ -1448,15 +1459,15 @@ if (key === "declaration") {
       return false;
     }
   }
-  if (!s1?.nicNo) return (setError("Schedule 1: NIC No is required."), false);
-  if (!s1?.date) return (setError("Schedule 1: Date is required."), false);
+  if (!s1?.nicNo) return fail("paymentInstruction.schedule1.person.nicNo", "Schedule 1: NIC No is required.");
+  if (!s1?.date) return fail("paymentInstruction.schedule1.date", "Schedule 1: Date is required.");
 
   // Schedule 2: at least person (1) + explainedByName + date
   if (!s2?.person1?.name || !s2?.person1?.nicNo || !s2?.person1?.address)
-    return (setError("Schedule 2: Person (1) name, NIC and address are required."), false);
+    return fail("paymentInstruction.schedule2.person1", "Schedule 2: Person (1) name, NIC and address are required.");
   if (!s2?.explainedByName)
-    return (setError("Schedule 2: Explained by (Name) is required."), false);
-  if (!s2?.date) return (setError("Schedule 2: Date is required."), false);
+    return fail("paymentInstruction.schedule2.explainedByName", "Schedule 2: Explained by (Name) is required.");
+  if (!s2?.date) return fail("paymentInstruction.schedule2.date", "Schedule 2: Date is required.");
 
   // Client signature (optional in UI right now; keep optional to avoid blocking submit)
   // If you add a client signature upload field, you can enforce it here.

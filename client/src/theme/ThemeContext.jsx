@@ -5,26 +5,44 @@ const ThemeContext = createContext(null);
 /**
  * ThemeProvider
  * - Uses Tailwind dark mode via 'class' on <html>
- * - On FIRST load, picks theme from browser/OS preference (prefers-color-scheme)
- * - If user later selects Light/Dark, we remember it in localStorage and use it on next loads
- *
- * NOTE: No "system/auto" mode toggle in the UI (per requirement).
+ * - ALWAYS follows the browser/OS preference (prefers-color-scheme)
+ *   • If browser is dark → app opens in dark
+ *   • If browser is light → app opens in light
+ * - If the user toggles manually, we still update the UI immediately,
+ *   but we DO NOT persist the choice (so next reload follows browser again).
  */
-export function ThemeProvider({ children, storageKey = "smartportal-theme" }) {
+export function ThemeProvider({ children }) {
   const getSystemTheme = () => {
     if (typeof window === "undefined" || !window.matchMedia) return "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   };
 
   // theme can be: "light" | "dark"
-  const [theme, setTheme] = useState(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved === "light" || saved === "dark" ? saved : getSystemTheme();
-    } catch {
-      return getSystemTheme();
+  const [theme, setTheme] = useState(() => getSystemTheme());
+
+  // Keep theme synced with browser/OS preference changes
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const handleChange = () => {
+      setTheme(media.matches ? "dark" : "light");
+    };
+
+    // Set immediately on mount (covers any early mismatch)
+    handleChange();
+
+    // Modern browsers
+    if (media.addEventListener) {
+      media.addEventListener("change", handleChange);
+      return () => media.removeEventListener("change", handleChange);
     }
-  });
+
+    // Fallback (older Safari)
+    media.addListener(handleChange);
+    return () => media.removeListener(handleChange);
+  }, []);
 
   // Apply to <html> for Tailwind dark: classes.
   useEffect(() => {
@@ -37,19 +55,12 @@ export function ThemeProvider({ children, storageKey = "smartportal-theme" }) {
     root.style.colorScheme = isDark ? "dark" : "light";
   }, [theme]);
 
-  // Persist user selection.
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, theme);
-    } catch {
-      // ignore
-    }
-  }, [theme, storageKey]);
-
   const value = useMemo(
     () => ({
       theme,
       resolvedTheme: theme,
+      isDark: theme === "dark",
+      isLight: theme === "light",
       setTheme,
       toggle: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
     }),

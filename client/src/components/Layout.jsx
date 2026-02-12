@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.jsx";
 import NavigationDrawer from "./NavigationDrawer.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 
@@ -8,7 +9,14 @@ import ThemeToggle from "./ThemeToggle.jsx";
  * - Provides a global theme toggle
  */
 export default function Layout() {
+  const auth = useAuth();
   const { pathname } = useLocation();
+
+  const publicRoutes = ["/", "/signin", "/signup", "/forgot-password"];
+  const isReset = pathname.startsWith("/reset-password");
+  const isPublic = publicRoutes.includes(pathname) || isReset;
+  const showNav = auth?.isAuthed && !isPublic;
+
 
   // Wizard pages are: /apply/:region/:type
   const parts = pathname.split("/").filter(Boolean);
@@ -24,7 +32,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      <NavigationDrawer />
+      {showNav ? <NavigationDrawer /> : null}
       <div className={toggleClass}>
         <ThemeToggle />
       </div>

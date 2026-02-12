@@ -177,7 +177,7 @@ export default function Home() {
       />
 
       {/* Content */}
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 pt-16 sm:pt-14">
 
         {/* ===== TITLE ===== */}
         <div className="text-center mb-10">

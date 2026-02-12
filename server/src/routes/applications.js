@@ -5,9 +5,14 @@ import crypto from "crypto";
 
 import { getModelFor, findByIdAcrossCollections } from "../models/ApplicationModels.js";
 import { upload } from "../middleware/upload.js";
+import { requireAuth } from "../middleware/auth.js";
 import { buildApplicationPdfBuffer } from "../services/pdf.js";
 
 const router = Router();
+
+// Protect application portal APIs
+router.use(requireAuth);
+
 
 // ✅ Customers can edit submitted applications within this window
 const EDIT_WINDOW_DAYS = Number(process.env.EDIT_WINDOW_DAYS || 7);
@@ -215,6 +220,119 @@ function getTransporter() {
 }
 
 /**
+ * ✅ Eye-catchy admin email body (PDF-attached submission)
+ * Keeps the same information, but in a clean StoxIQ-styled layout.
+ */
+function buildAdminPdfEmailHTML({ id, region, applicantType, formKey, editUntil, action = "New" }) {
+  const safe = (v) =>
+    String(v ?? "-")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const fmtEditUntil = editUntil
+    ? new Date(editUntil).toLocaleString()
+    : "-";
+
+  const actionLabel = safe(action);
+  const title = `${actionLabel} Application — ${safe(region)}/${safe(applicantType)} (${safe(formKey)})`;
+
+  return `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,Helvetica,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center" style="padding:28px 12px;">
+            <table width="720" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(15,23,42,0.10);border:1px solid #e5e7eb;">
+
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg,#0f172a,#020617);padding:22px 22px;color:#ffffff;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div>
+                      <div style="font-size:22px;font-weight:800;letter-spacing:.6px;">StoxIQ</div>
+                    <div style="opacity:.85;font-size:13px;margin-top:4px;">Asha Securities • Onboarding ${actionLabel}</div>
+                    </div>
+                    <div style="text-align:right;">
+                      <div style="font-size:12px;opacity:.85;">Submission ID</div>
+                      <div style="font-size:16px;font-weight:800;">${safe(id)}</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:22px 22px 10px 22px;">
+                  <div style="font-size:16px;color:#0f172a;font-weight:800;">${title}</div>
+                  <div style="margin-top:8px;color:#475569;font-size:14px;line-height:1.6;">
+                    ${actionLabel === "Updated" ? "An existing onboarding application has been updated via the StoxIQ portal." : "A new onboarding application has been submitted via the StoxIQ portal."}
+                    The PDF summary and any uploaded supporting documents are attached to this email.
+                  </div>
+
+                  <!-- Details Card -->
+                  <div style="margin-top:16px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px 14px;">
+                    <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;">Application Details</div>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;color:#0f172a;">
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;">Region</td>
+                        <td style="padding:8px 0;text-align:right;font-weight:800;">${safe(region)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;">Applicant Type</td>
+                        <td style="padding:8px 0;text-align:right;font-weight:800;">${safe(applicantType)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;">Form Key</td>
+                        <td style="padding:8px 0;text-align:right;font-weight:800;">${safe(formKey)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;">Edit Window Until</td>
+                        <td style="padding:8px 0;text-align:right;font-weight:800;">${safe(fmtEditUntil)}</td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <!-- Attachment note -->
+                  <div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;">
+                    <div style="font-size:13px;font-weight:800;color:#1e3a8a;">Attachments Included</div>
+                    <div style="margin-top:6px;font-size:13px;color:#1e293b;line-height:1.6;">
+                      • Application PDF (summary)<br/>
+                      • Uploaded documents (if provided by the applicant)
+                    </div>
+                  </div>
+
+                  <div style="margin-top:14px;color:#64748b;font-size:12px;line-height:1.6;">
+                    This email was generated automatically by the StoxIQ platform.
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="background:#020617;color:#94a3b8;text-align:center;padding:16px 10px;font-size:12px;">
+                  TYTECH PTY LTD • A Subsidiary of VentureCorp<br/>
+                  © ${new Date().getFullYear()} StoxIQ Platform
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+  `;
+}
+
+/**
  * ✅ Multer allowed fields (your current list)
  */
 const uploadFields = upload.fields([
@@ -392,6 +510,13 @@ router.post("/", async (req, res) => {
           subject,
           text: `A new application was submitted.\n\nSubmission ID: ${String(created._id)}
 Edit Until: ${new Date(created.editUntil).toLocaleString()}\n\nRegion: ${region}\nApplicant Type: ${applicantType}\nForm Key: ${formKey}\n\nPDF attached.`,
+          html: buildAdminPdfEmailHTML({
+            id: String(created._id),
+            region,
+            applicantType,
+            formKey,
+            editUntil: created.editUntil,
+          }),
           attachments,
         });
 
@@ -673,6 +798,14 @@ router.put("/:id", async (req, res) => {
             subject,
             text: `An existing application was UPDATED.\n\nSubmission ID: ${String(updated._id)}
 Edit Until: ${new Date(updated.editUntil).toLocaleString()}\n\nRegion: ${updated.region}\nApplicant Type: ${updated.applicantType}\nForm Key: ${updated.formKey}\nUpdated At: ${new Date(updated.updatedAt || Date.now()).toLocaleString()}\n\nUpdated PDF attached.`,
+            html: buildAdminPdfEmailHTML({
+              id: String(updated._id),
+              region: updated.region,
+              applicantType: updated.applicantType,
+              formKey: updated.formKey,
+              editUntil: updated.editUntil,
+              action: "Updated",
+            }),
             attachments,
           });
 

@@ -3,6 +3,16 @@
 // You can still override with VITE_API_BASE for production deployments.
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
+function getAuthToken() {
+  try { return localStorage.getItem("stoxiq_token"); } catch { return null; }
+}
+
+function authHeaders(extra = {}) {
+  const t = getAuthToken();
+  return t ? { ...extra, Authorization: `Bearer ${t}` } : extra;
+}
+
+
 function normalizeFileEntry(v) {
   // We currently store raw File objects in state, but keep this future-proof.
   if (!v) return null;
@@ -27,6 +37,7 @@ export async function submitApplication({ data, files }) {
   }
 
   const res = await fetch(`${API_BASE}/api/applications`, {
+    headers: authHeaders(),
     method: "POST",
     body: fd,
   });
@@ -40,9 +51,11 @@ export async function submitApplication({ data, files }) {
 export async function fetchApplicationForEdit({ id }) {
   if (!id) throw new Error("Missing id");
 
-  const res = await fetch(`${API_BASE}/api/applications/${encodeURIComponent(id)}`);
+  const res = await fetch(`${API_BASE}/api/applications/${encodeURIComponent(id)}`, {
+    headers: authHeaders(),
+  });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.message || "Failed to load application");
+  if (!res.ok) throw new Error(json?.message || json?.error || "Failed to load application");
   return json;
 }
 
@@ -62,12 +75,13 @@ export async function updateApplication({ id, data, files }) {
   }
 
   const res = await fetch(`${API_BASE}/api/applications/${encodeURIComponent(id)}`, {
+    headers: authHeaders(),
     method: "PUT",
     body: fd,
   });
 
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.message || "Update failed");
+  if (!res.ok) throw new Error(json?.message || json?.error || "Update failed");
   return json;
 }
 
