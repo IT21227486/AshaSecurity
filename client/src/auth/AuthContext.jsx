@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
+// In dev we usually proxy `/api` from Vite -> backend.
+// In production (client hosted separately) set VITE_API_BASE to your backend URL.
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 const AuthContext = createContext(null);
 
 function storageGet(key) {
@@ -21,7 +25,7 @@ export function AuthProvider({ children }) {
     if (!tk) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/auth/me`, {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${tk}` },
       });
       if (!res.ok) throw new Error("unauthorized");
@@ -47,7 +51,7 @@ export function AuthProvider({ children }) {
     loading,
     isAuthed: !!token && !!user,
     async signin({ email, password, remember }) {
-      const res = await fetch(`/api/auth/signin`, {
+      const res = await fetch(`${API_BASE}/api/auth/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, remember }),
@@ -60,7 +64,7 @@ export function AuthProvider({ children }) {
       return data;
     },
     async signup({ name, email, password, tel }) {
-      const res = await fetch(`/api/auth/signup`, {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, tel }),
@@ -78,7 +82,7 @@ export function AuthProvider({ children }) {
       setUser(null);
     },
     async forgotPassword(email) {
-      const res = await fetch(`/api/auth/forgot-password`, {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -88,7 +92,7 @@ export function AuthProvider({ children }) {
       return data;
     },
     async resetPassword({ token: resetToken, password }) {
-      const res = await fetch(`/api/auth/reset-password`, {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: resetToken, password }),

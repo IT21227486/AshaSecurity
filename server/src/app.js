@@ -10,17 +10,29 @@ import authRouter from "./routes/auth.js";
 const app = express();
 
 // CORS
-// In development allow localhost on any port; in production keep it strict via env.CORS_ORIGIN.
-const corsOptions =
-  env.NODE_ENV === "production"
-    ? { origin: env.CORS_ORIGIN }
-    : {
-        origin: (origin, cb) => {
-          if (!origin) return cb(null, true);
-          const ok = /^https?:\/\/localhost:\d+$/.test(origin);
-          return cb(null, ok);
-        },
-      };
+// In development allow localhost on any port.
+// In production keep it strict via env.CORS_ORIGIN (supports comma-separated list).
+const allowedOrigins = (env.CORS_ORIGIN || "")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    // allow server-to-server / curl
+    if (!origin) return cb(null, true);
+
+    if (env.NODE_ENV !== "production") {
+      const ok = /^https?:\/\/localhost:\d+$/.test(origin);
+      return cb(null, ok);
+    }
+
+    const ok = allowedOrigins.includes(origin);
+    return cb(null, ok);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
 app.use(cors(corsOptions));
 app.use(express.json());
