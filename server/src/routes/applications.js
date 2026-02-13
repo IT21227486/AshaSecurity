@@ -282,6 +282,12 @@ function buildAdminPdfEmailHTML({ id, region, applicantType, formKey, editUntil,
                     <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;">Application Details</div>
                     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;color:#0f172a;">
                       <tr>
+                        <td style="padding:8px 0;color:#64748b;">Submission ID</td>
+                        <td style="padding:8px 0;text-align:right;font-weight:800;">
+                          <span style="display:inline-block;padding:4px 10px;border-radius:999px;background:#0f172a;color:#ffffff;font-size:12px;letter-spacing:.3px;">${safe(id)}</span>
+                        </td>
+                      </tr>
+                      <tr>
                         <td style="padding:8px 0;color:#64748b;">Region</td>
                         <td style="padding:8px 0;text-align:right;font-weight:800;">${safe(region)}</td>
                       </tr>
